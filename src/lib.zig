@@ -40,7 +40,7 @@ pub const SCRaw = struct {
         errdefer alloc.destroy(self);
         const ret = pcsc.SCardEstablishContext(.USER, null, null, &self.context);
         if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-            std.log.err("SCardEstablishContext failed: reason={X}.", .{ret});
+            std.log.err("[SCRaw] SCardEstablishContext failed: reason={X}.", .{ret});
             return InitError.SCardFailed;
         }
 
@@ -63,13 +63,13 @@ pub const SCRaw = struct {
     pub fn deinit(self: *Self, alloc: std.mem.Allocator) DeinitError!void {
         const ret_cancel = pcsc.SCardCancel(self.context);
         if (ret_cancel != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-            std.log.err("SCardCancel failed: reason={X}.", .{ret_cancel});
+            std.log.err("[SCRaw] SCardCancel failed: reason={X}.", .{ret_cancel});
             self.reason = ret_cancel;
             return DeinitError.SCardFailed;
         }
         const ret_release = pcsc.SCardReleaseContext(self.context);
         if (ret_release != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-            std.log.err("SCardReleaseContext failed: reason={X}.", .{ret_release});
+            std.log.err("[SCRaw] SCardReleaseContext failed: reason={X}.", .{ret_release});
             self.reason = ret_release;
             return DeinitError.SCardFailed;
         }
@@ -85,13 +85,13 @@ pub const SCRaw = struct {
         const name_list_length_arg: ?*pcsc.ulong = &name_list_length;
         const ret = pcsc.SCardListReaders(self.context, null, name_list_arg, name_list_length_arg);
         if (ret == @intFromEnum(SCRet.SCARD_E_NO_READERS_AVAILABLE)) {
-            std.log.warn("SCardListReaders: no readers available.", .{});
+            std.log.warn("[SCRaw] SCardListReaders: no readers available.", .{});
             self.reader_list_slice = self.reader_list_buffer[0..0];
             self.reader_list_length = 0;
             self.reader_list_next_offset = 0;
             return;
         } else if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-            std.log.err("SCardListReaders failed: reason={X}.", .{ret});
+            std.log.err("[SCRaw] SCardListReaders failed: reason={X}.", .{ret});
             self.reason = ret;
             return ReaderSearchBeginError.SCardFailed;
         }
@@ -103,13 +103,11 @@ pub const SCRaw = struct {
         self.reader_list_slice = self.reader_list_buffer[0..name_list_length];
         self.reader_list_length = name_list_length;
         self.reader_list_next_offset = 0;
-
-        std.log.debug("Readers: {s}.", .{self.reader_list_slice.?});
     }
 
     pub fn readerSearchEnd(self: *Self) void {
         if (self.reader_list_slice == null) {
-            std.log.warn("Reader search end requested, but the search never started.", .{});
+            std.log.warn("[SCRaw] Reader search end requested, but the search was never started.", .{});
         }
 
         self.reader_list_slice = null;
@@ -150,7 +148,7 @@ pub const SCRaw = struct {
         }
 
         if (self.context_card == null) {
-            std.log.debug("Card connecting...", .{});
+            std.log.debug("[SCRaw] Card connecting...", .{});
             var context_card: pcsc.ulong = 0;
             const context_card_arg: ?*pcsc.ulong = &context_card;
             var protocol_active: pcsc.ulong = @intFromEnum(SCProtocol.T0);
@@ -158,12 +156,12 @@ pub const SCRaw = struct {
             const reader_select_arg: ?[*:0]const u8 = @ptrCast(self.reader_select);
             const ret = pcsc.SCardConnect(self.context, reader_select_arg, pcsc.SCARD_SHARE_SHARED, @intFromEnum(protocol), context_card_arg, protocol_active_arg);
             if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-                std.log.err("SCardConnect failed: reason={X}.", .{ret});
+                std.log.err("[SCRaw] SCardConnect failed: reason={X}.", .{ret});
                 self.reason = ret;
                 return CardConnectError.SCardFailed;
             }
             if (context_card != 0) {
-                std.log.info("SCardConnect: Card in reader \"{s}\" selected: active_protocol={s}.", .{ self.reader_select.?, switch (protocol_active) {
+                std.log.info("[SCRaw] Card in reader \"{s}\" selected: active_protocol={s}.", .{ self.reader_select.?, switch (protocol_active) {
                     @intFromEnum(SCProtocol.T0) => "T0",
                     @intFromEnum(SCProtocol.T1) => "T1",
                     else => "unrecognized",
@@ -171,37 +169,37 @@ pub const SCRaw = struct {
                 self.card_protocol = @as(SCProtocol, @enumFromInt(protocol_active));
                 self.context_card = context_card;
             } else {
-                std.log.err("SCardConnect: Card context invalid, context={}.", .{context_card});
+                std.log.err("[SCRaw] SCardConnect: Card context invalid, context={}.", .{context_card});
                 return CardConnectError.CardContextInvalid;
             }
         } else {
-            std.log.debug("Card reconnecting...", .{});
+            std.log.debug("[SCRaw] Card reconnecting...", .{});
             var protocol_active: pcsc.ulong = @intFromEnum(SCProtocol.T0);
             const protocol_active_arg: ?*pcsc.ulong = &protocol_active;
             const ret = pcsc.SCardReconnect(self.context_card.?, pcsc.SCARD_SHARE_SHARED, @intFromEnum(protocol), pcsc.SCARD_RESET_CARD, protocol_active_arg);
             if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-                std.log.err("SCardReconnect failed: reason={X}.", .{ret});
+                std.log.err("[SCRaw] SCardReconnect failed: reason={X}.", .{ret});
                 self.reason = ret;
                 return CardConnectError.SCardFailed;
             }
         }
-        std.log.info("Card connected.", .{});
+        std.log.info("[SCRaw] Card connected.", .{});
     }
 
     const CardDisconnectError = error{} || SCardError;
     pub fn cardDisconnect(self: *Self) CardDisconnectError!void {
         if (self.context_card == null) {
-            std.log.warn("Requested card disconnect, but card is not connected.", .{});
+            std.log.warn("[SCRaw] Requested card disconnect, but card is not connected.", .{});
             return;
         }
 
         const ret = pcsc.SCardDisconnect(self.context_card.?, pcsc.SCARD_LEAVE_CARD);
         if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-            std.log.err("SCardDisconnect failed: reason={X}.", .{ret});
+            std.log.err("[SCRaw] SCardDisconnect failed: reason={X}.", .{ret});
             self.reason = ret;
             return CardDisconnectError.SCardFailed;
         }
-        std.log.info("Card disconnected.", .{});
+        std.log.info("[SCRaw] Card disconnected.", .{});
         self.context_card = null;
     }
 
@@ -213,7 +211,7 @@ pub const SCRaw = struct {
     pub fn cardSendReceive(self: *Self, buffer_send: []u8, buffer_receive: []u8) CardSendReceiveError![]u8 {
         if (self.context_card == null) {
             // No connected card to send data to.
-            std.log.warn("Tried sending an APDU but a card is not connected.", .{});
+            std.log.warn("[SCRaw] Tried sending an APDU but a card is not connected.", .{});
             return CardSendReceiveError.CardContextInvalid;
         }
 
@@ -222,7 +220,7 @@ pub const SCRaw = struct {
             .cbPciLength = @sizeOf(pcsc.SCARD_IO_REQUEST),
         };
         var pci_arg: ?*pcsc.SCARD_IO_REQUEST = &pci;
-        std.log.debug("PCI: protocol={} pci_length={}.", .{ pci.dwProtocol, pci.cbPciLength });
+        std.log.debug("[SCRaw] PCI: protocol={} pci_length={}.", .{ pci.dwProtocol, pci.cbPciLength });
 
         var response_length: pcsc.ulong = @intCast(buffer_receive.len);
         const response_length_arg: ?*pcsc.ulong = &response_length;
@@ -230,21 +228,21 @@ pub const SCRaw = struct {
         const buffer_send_length_arg: pcsc.ulong = @intCast(buffer_send.len);
         const buffer_receive_arg: [*c]u8 = @ptrCast(buffer_receive);
 
-        std.log.debug("Sending {} bytes and receiving at most {} bytes.", .{ buffer_send_length_arg, response_length_arg.?.* });
+        std.log.debug("[SCRaw] Sending {} bytes and receiving at most {} bytes.", .{ buffer_send_length_arg, response_length_arg.?.* });
         const ret = pcsc.SCardTransmit(self.context_card.?, pci_arg, buffer_send_arg, buffer_send_length_arg, null, buffer_receive_arg, response_length_arg);
         if (ret == @intFromEnum(SCRet.SCARD_E_NO_SMARTCARD)) {
-            std.log.err("SCardTransmit failed because the smartcard is no longer inserted into the reader.", .{});
+            std.log.err("[SCRaw] SCardTransmit failed because the smartcard is no longer inserted into the reader.", .{});
             self.reason = ret;
             return CardSendReceiveError.CardNotPresent;
         } else if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
-            std.log.err("SCardTransmit failed: reason={X} response_length={}.", .{ ret, response_length });
+            std.log.err("[SCRaw] SCardTransmit failed: reason={X} response_length={}.", .{ ret, response_length });
             self.reason = ret;
             return CardSendReceiveError.SCardFailed;
         }
 
         if (response_length > 256 or response_length > buffer_receive.len) {
             //  PC/SC doesn't even support extended TPDUs so this should never happen.
-            std.log.err("Response has length {} but max length or RAPDU is 256 or max length of the receive buffer which is {}.", .{ response_length, buffer_receive.len });
+            std.log.err("[SCRaw] Response has length {} but max length or RAPDU is 256 or max length of the receive buffer which is {}.", .{ response_length, buffer_receive.len });
             return CardSendReceiveError.ResponseInvalid;
         }
 
