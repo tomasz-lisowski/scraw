@@ -15,6 +15,11 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    _ = b.addModule("scraw", .{
+        .source_file = .{ .path = "src/lib.zig" },
+        .dependencies = &[_]std.Build.ModuleDependency{},
+    });
+
     const lib = b.addStaticLibrary(.{
         .name = "scraw",
         .root_source_file = .{ .path = "src/lib.zig" },
