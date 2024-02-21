@@ -138,7 +138,7 @@ pub const SCRaw = struct {
         self.reader_select = reader_name;
     }
 
-    const CardConnectError = error{
+    pub const CardConnectError = error{
         ReaderNotSelected,
         CardContextInvalid,
     } || SCardError;
@@ -186,7 +186,7 @@ pub const SCRaw = struct {
         std.log.info("[SCRaw] Card connected.", .{});
     }
 
-    const CardDisconnectError = error{} || SCardError;
+    pub const CardDisconnectError = error{} || SCardError;
     pub fn cardDisconnect(self: *Self) CardDisconnectError!void {
         if (self.context_card == null) {
             std.log.warn("[SCRaw] Requested card disconnect, but card is not connected.", .{});
@@ -203,16 +203,16 @@ pub const SCRaw = struct {
         self.context_card = null;
     }
 
-    const CardSendReceiveError = error{
+    pub const CardTransceiveError = error{
         CardContextInvalid,
         CardNotPresent,
         ResponseInvalid,
     } || SCardError;
-    pub fn cardSendReceive(self: *Self, buffer_send: []u8, buffer_receive: []u8) CardSendReceiveError![]u8 {
+    pub fn cardTransceive(self: *Self, buffer_send: []u8, buffer_receive: []u8) CardTransceiveError![]u8 {
         if (self.context_card == null) {
             // No connected card to send data to.
             std.log.warn("[SCRaw] Tried sending an APDU but a card is not connected.", .{});
-            return CardSendReceiveError.CardContextInvalid;
+            return CardTransceiveError.CardContextInvalid;
         }
 
         var pci: pcsc.SCARD_IO_REQUEST = .{
@@ -233,17 +233,17 @@ pub const SCRaw = struct {
         if (ret == @intFromEnum(SCRet.SCARD_E_NO_SMARTCARD)) {
             std.log.err("[SCRaw] SCardTransmit failed because the smartcard is no longer inserted into the reader.", .{});
             self.reason = ret;
-            return CardSendReceiveError.CardNotPresent;
+            return CardTransceiveError.CardNotPresent;
         } else if (ret != @intFromEnum(SCRet.SCARD_S_SUCCESS)) {
             std.log.err("[SCRaw] SCardTransmit failed: reason={X} response_length={}.", .{ ret, response_length });
             self.reason = ret;
-            return CardSendReceiveError.SCardFailed;
+            return CardTransceiveError.SCardFailed;
         }
 
         if (response_length > 256 or response_length > buffer_receive.len) {
             //  PC/SC doesn't even support extended TPDUs so this should never happen.
             std.log.err("[SCRaw] Response has length {} but max length or RAPDU is 256 or max length of the receive buffer which is {}.", .{ response_length, buffer_receive.len });
-            return CardSendReceiveError.ResponseInvalid;
+            return CardTransceiveError.ResponseInvalid;
         }
 
         return buffer_receive[0..response_length];
