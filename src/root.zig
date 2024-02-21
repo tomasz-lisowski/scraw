@@ -219,7 +219,7 @@ pub const SCRaw = struct {
             .dwProtocol = @intFromEnum(self.card_protocol),
             .cbPciLength = @sizeOf(pcsc.SCARD_IO_REQUEST),
         };
-        var pci_arg: ?*pcsc.SCARD_IO_REQUEST = &pci;
+        const pci_arg: ?*pcsc.SCARD_IO_REQUEST = &pci;
         std.log.debug("[SCRaw] PCI: protocol={} pci_length={}.", .{ pci.dwProtocol, pci.cbPciLength });
 
         var response_length: pcsc.ulong = @intCast(buffer_receive.len);

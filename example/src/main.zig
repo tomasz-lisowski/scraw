@@ -10,7 +10,7 @@ const MainError = error{
 };
 pub fn main() !void {
     var alloc_gp = std.heap.GeneralPurposeAllocator(.{}){};
-    var alloc = alloc_gp.allocator();
+    const alloc = alloc_gp.allocator();
 
     const arg = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, arg);
@@ -28,7 +28,7 @@ pub fn main() !void {
     try scraw.readerSearchStart();
     var reader_found: bool = false;
     while (true) {
-        var reader_name: []const u8 = scraw.readerSearchNext() catch |err| {
+        const reader_name: []const u8 = scraw.readerSearchNext() catch |err| {
             if (err == SCRaw.ReaderSearchNextError.ReaderSearchEndOfList) {
                 break;
             } else {
@@ -56,7 +56,7 @@ pub fn main() !void {
     };
 
     var capdu0 = [_]u8{ 0x00, 0xA4, 0x00, 0x04, 0x02, 0x3F, 0x00 };
-    var rapdu_buffer: [SCRaw.bufferReceiveLengthMax]u8 = .{};
+    var rapdu_buffer = std.mem.zeroes([SCRaw.bufferReceiveLengthMax]u8);
     var rapdu = try scraw.cardSendReceive(capdu0[0..], rapdu_buffer[0..]);
     std.log.info("CAPDU={} RAPDU={}.", .{ std.fmt.fmtSliceHexUpper(capdu0[0..]), std.fmt.fmtSliceHexUpper(rapdu[0..]) });
 
