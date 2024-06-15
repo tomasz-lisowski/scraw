@@ -14,10 +14,11 @@ You'll need to add the library as a dependency:
 
 In your `build.zig` you will also need to add:
 ```
-const dep_scraw = b.dependency("scraw", .{
+const dep__scraw = b.dependency("scraw", .{
     .target = target,
     .optimize = optimize,
 });
+const module__scraw = dep__scraw.module("scraw");
 ```
 ```
 exe.linkLibC();
@@ -28,5 +29,5 @@ if (target.result.os.tag == .windows) {
 } else {
     @panic("Platform unsupported.");
 }
-exe.root_module.addImport("scraw", dep_scraw.module("scraw"));
+exe.root_module.addImport("scraw", module__scraw);
 ```
