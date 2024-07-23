@@ -241,7 +241,7 @@ pub const ScRaw = struct {
             return CardTransceiveError.SCardFailed;
         }
 
-        if (response_length > 256 or response_length > buffer_receive.len) {
+        if (response_length > 258 or response_length > buffer_receive.len) {
             //  PC/SC doesn't even support extended TPDUs so this should never happen.
             log.err("Response has length {} but max length or RAPDU is 256 or max length of the receive buffer which is {}.", .{ response_length, buffer_receive.len });
             return CardTransceiveError.ResponseInvalid;
