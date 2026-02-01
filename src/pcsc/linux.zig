@@ -28,26 +28,26 @@ pub extern "pcsclite" fn SCardEstablishContext(
     pvReserved1: ?*const anyopaque,
     pvReserved2: ?*const anyopaque,
     phContext: ?*ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardReleaseContext(
     hContext: ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardIsValidContext(
     hContext: ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardListReaders(
     hContext: ulong,
     mszGroups: ?[*:0]const u8,
     mszReaders: ?[*:0]u8,
     pcchReaders: ?*ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardCancel(
     hContext: ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardConnect(
     hContext: ulong,
@@ -56,7 +56,7 @@ pub extern "pcsclite" fn SCardConnect(
     dwPreferredProtocols: ulong,
     phCard: ?*ulong,
     pdwActiveProtocol: ?*ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardReconnect(
     hCard: ulong,
@@ -64,12 +64,12 @@ pub extern "pcsclite" fn SCardReconnect(
     dwPreferredProtocols: ulong,
     dwInitialization: ulong,
     pdwActiveProtocol: ?*ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardDisconnect(
     hCard: ulong,
     dwDisposition: ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;
 
 pub extern "pcsclite" fn SCardTransmit(
     hCard: ulong,
@@ -79,4 +79,4 @@ pub extern "pcsclite" fn SCardTransmit(
     pioRecvPci: ?*SCARD_IO_REQUEST,
     pbRecvBuffer: ?[*]u8,
     pcbRecvLength: ?*ulong,
-) callconv(.C) ulong;
+) callconv(.c) ulong;

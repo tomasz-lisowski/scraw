@@ -1,7 +1,8 @@
 .{
-    .name = "example",
-    .version = "0.0.1",
-    .minimum_zig_version = "0.12.0",
+    .name = .scraw__example,
+    .version = "0.0.2",
+    .fingerprint = 0x6b5fba976e8ba8bc,
+    .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .scraw = .{
             .path = "../",
